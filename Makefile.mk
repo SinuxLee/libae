@@ -11,11 +11,17 @@ timer:
 	@cl /c example\timer.c
 	@link $(LINK_FLAG) timer.obj $(LIBS) /OUT:timer.exe
 	
-echo:
-	@cl /c example\echo.c
-	@link $(LINK_FLAG) echo.obj $(LIBS) /OUT:echo.exe
+echoserver:
+	@cl /c example\echoserver.c
+	@link $(LINK_FLAG) echoserver.obj $(LIBS) /OUT:echoserver.exe
+
+echoclient:
+	@cl /c example\echoclient.c
+	@link $(LINK_FLAG) echoclient.obj $(LIBS) /OUT:echoclient.exe
 
 clean:
 	@del *.exe
 	@del *.obj
 	@del *.lib
+	@del *.ilk
+	@del *.pdb

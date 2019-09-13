@@ -9,13 +9,15 @@
 #include "../src/ae.h"
 #include "../src/anet.h"
 
+void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask);
+
 void writeToClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
 {
     char *buffer = clientdata;
-    printf("%p\n", clientdata);
     write(fd, buffer, strlen(buffer));
     free(buffer);
     aeDeleteFileEvent(loop, fd, mask);
+    aeCreateFileEvent(loop, fd, AE_READABLE, readFromClient, NULL);
 }
 
 void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
@@ -25,10 +27,13 @@ void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
     memset(buffer, 0x00, sizeof(char) * buffer_size);
     int size;
     size = read(fd, buffer, buffer_size);
-		if(size > 0)
-			aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToClient, buffer);
-		else
-			aeDeleteFileEvent(loop, fd, mask);
+    if(size > 0)
+    {
+        printf("read from client %s\n", buffer);
+        aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToClient, buffer);
+    }
+   
+    aeDeleteFileEvent(loop, fd, mask);
 }
 
 void acceptTcpHandler(aeEventLoop *loop, int fd, void *clientdata, int mask)
@@ -51,13 +56,14 @@ void acceptTcpHandler(aeEventLoop *loop, int fd, void *clientdata, int mask)
 int main()
 {
     int ipfd;
-		 // create main event loop
+	// create main event loop
     aeEventLoop *loop;
     loop = aeCreateEventLoop(1024);
-		
+
     // create server socket
     ipfd = anetTcpServer(NULL, 8000, "0.0.0.0", 0);
     assert(ipfd != ANET_ERR);
+    printf("server listen on 8000\n");
 
     // regist socket connect callback
     int ret;
