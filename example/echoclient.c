@@ -13,10 +13,12 @@ void readFromServer(aeEventLoop *loop, int fd, void *clientdata, int mask);
 
 void writeToServer(aeEventLoop *loop, int fd, void *clientdata, int mask)
 {
-    char *buffer = "Hello aeNet!";
-    int size = write(fd, buffer, strlen(buffer));
-    printf("write to server %d byte, %s\n", size, buffer);
+    char *buffer = calloc(1024,1);
+    memset(buffer,'a', 1023);
+    int size = anetWrite(fd, buffer, strlen(buffer));
+    //printf("write to server %d byte, %s\n", size, buffer);
     aeDeleteFileEvent(loop, fd, mask);
+    free(buffer);
 }
 
 void readFromServer(aeEventLoop *loop, int fd, void *clientdata, int mask)
@@ -26,14 +28,18 @@ void readFromServer(aeEventLoop *loop, int fd, void *clientdata, int mask)
     memset(buffer, 0x00, sizeof(char) * buffer_size);
     int size;
     size = read(fd, buffer, buffer_size);
-    if(size > 0)
+    if(size <= 0)
     {
-        printf("read from server, %s\n", buffer);
-        aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToServer, NULL);
+        printf("Remote disconnected.\n");
+        aeDeleteFileEvent(loop, fd, AE_READABLE);
     }
-
-    aeDeleteFileEvent(loop, fd, mask);
-    aeCreateFileEvent(loop, fd, AE_READABLE, readFromServer, NULL);
+    else
+    {
+        //printf("read from server, %s\n", buffer);
+        aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToServer, NULL);
+        aeCreateFileEvent(loop, fd, AE_READABLE, readFromServer, NULL);
+    }
+    
     free(buffer);
 }
 
@@ -43,21 +49,26 @@ int main()
 	// create main event loop
     aeEventLoop *loop;
     loop = aeCreateEventLoop(1024);
-		
-    // create connection
-    ipfd = anetTcpNonBlockConnect(NULL,"127.0.0.1", 8000);
-    assert(ipfd != ANET_ERR);
+	
+    for(int i = 0; i < 1; i++)
+    {
+        // create connection
+        ipfd = anetTcpNonBlockConnect(NULL,"192.168.1.76", 8000);
+        assert(ipfd != ANET_ERR);
 
-    anetNonBlock(NULL, ipfd);
+        anetNonBlock(NULL, ipfd);
+        anetEnableTcpNoDelay(NULL, ipfd);
 
-    // regist socket read callback
-    int ret;
-    ret = aeCreateFileEvent(loop, ipfd, AE_READABLE, readFromServer, NULL);
-    assert(ret != AE_ERR);
+        // regist socket read callback
+        int ret;
+        ret = aeCreateFileEvent(loop, ipfd, AE_READABLE, readFromServer, NULL);
+        assert(ret != AE_ERR);
 
-     // regist socket write callback
-    ret = aeCreateFileEvent(loop, ipfd, AE_WRITABLE, writeToServer, NULL);
-    assert(ret != AE_ERR);
+        // regist socket write callback
+        ret = aeCreateFileEvent(loop, ipfd, AE_WRITABLE, writeToServer, NULL);
+        assert(ret != AE_ERR);
+        //Sleep(20);
+    }
 
     // start main loop
     aeMain(loop);

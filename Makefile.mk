@@ -11,11 +11,11 @@ timer:
 	@cl /c example\timer.c
 	@link $(LINK_FLAG) timer.obj $(LIBS) /OUT:timer.exe
 	
-echoserver:
+echoserver: example\echoserver.c
 	@cl /c example\echoserver.c
 	@link $(LINK_FLAG) echoserver.obj $(LIBS) /OUT:echoserver.exe
 
-echoclient:
+echoclient: example\echoclient.c
 	@cl /c example\echoclient.c
 	@link $(LINK_FLAG) echoclient.obj $(LIBS) /OUT:echoclient.exe
 

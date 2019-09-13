@@ -9,15 +9,16 @@
 #include "../src/ae.h"
 #include "../src/anet.h"
 
+long long datalength = 0;
+
 void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask);
 
 void writeToClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
 {
     char *buffer = clientdata;
-    write(fd, buffer, strlen(buffer));
+    anetWrite(fd, buffer, strlen(buffer));
     free(buffer);
     aeDeleteFileEvent(loop, fd, mask);
-    aeCreateFileEvent(loop, fd, AE_READABLE, readFromClient, NULL);
 }
 
 void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
@@ -25,15 +26,19 @@ void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
     int buffer_size = 1024;
     char *buffer = malloc(sizeof(char) * buffer_size);
     memset(buffer, 0x00, sizeof(char) * buffer_size);
-    int size;
-    size = read(fd, buffer, buffer_size);
-    if(size > 0)
+    int size =  read(fd, buffer, buffer_size);
+    if (size <= 0)
     {
-        printf("read from client %s\n", buffer);
-        aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToClient, buffer);
+      printf("Client disconnected\n");
+      free(buffer);
+      aeDeleteFileEvent(loop, fd, AE_READABLE);
+      return; 
     }
-   
-    aeDeleteFileEvent(loop, fd, mask);
+
+    //printf("Read from client, %s\n", buffer);
+    aeCreateFileEvent(loop, fd, AE_READABLE, readFromClient, NULL);
+    aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToClient, buffer);
+    datalength += size;
 }
 
 void acceptTcpHandler(aeEventLoop *loop, int fd, void *clientdata, int mask)
@@ -53,6 +58,18 @@ void acceptTcpHandler(aeEventLoop *loop, int fd, void *clientdata, int mask)
     assert(ret != AE_ERR);
 }
 
+int CalcByteTimer(struct aeEventLoop *loop, long long id, void *clientData)
+{
+    static long long curlength = 0;
+    int rate = (datalength - curlength) / (1024 *1024);
+    printf("Recive rate: %d MB/s\n", rate);
+    curlength = datalength;
+
+    aeCreateTimeEvent(loop, 1000, CalcByteTimer,NULL, NULL);
+
+    return -1;
+}
+
 int main()
 {
     int ipfd;
@@ -65,9 +82,15 @@ int main()
     assert(ipfd != ANET_ERR);
     printf("server listen on 8000\n");
 
+    anetNonBlock(NULL, ipfd);
+    anetEnableTcpNoDelay(NULL, ipfd);
+
     // regist socket connect callback
     int ret;
     ret = aeCreateFileEvent(loop, ipfd, AE_READABLE, acceptTcpHandler, NULL);
+    assert(ret != AE_ERR);
+
+    ret = aeCreateTimeEvent(loop, 1000, CalcByteTimer,NULL, NULL);
     assert(ret != AE_ERR);
 
     // start main loop
