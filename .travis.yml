@@ -1,0 +1,64 @@
+language: c
+c:
+  - c99
+  - c11
+  
+matrix:
+  include: 
+    - name: "Linux with gcc"
+      os: linux
+      dist: xenial
+      sudo: required
+      compiler: gcc
+      env: OS=linux COMPILER=gcc GCC_VERSION=9
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+          packages:
+            - gcc-9
+            - make
+          update: true
+      script: make
+
+    - name: "Linux with clang"
+      os: linux
+      dist: xenial
+      sudo: required
+      compiler:
+        - clang
+        - gcc
+      env: OS=linux COMPILER=clang CLANG_VERSION=10
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main'
+              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+          packages:
+            - clang-10
+            - make
+          update: true
+      script: make
+
+    - name: "MacOS"
+      os: osx
+      compiler: clang
+      env: OS=osx COMPILER=clang
+      osx_image: xcode11.2
+      script: make
+
+    - name: "Windows"
+      os: windows
+      compiler: clang
+      env: CONAN_VISUAL_VERSIONS=15
+      osx_image: xcode11.2
+      script: nmake -f Makefile.mk
+
+branches:
+  only:
+    - master
+
+notifications:
+  email:
+    on_success: never
