@@ -2,7 +2,7 @@ language: c
 c:
   - c99
   - c11
-  
+
 matrix:
   include: 
     - name: "Linux with gcc"
@@ -58,6 +58,7 @@ matrix:
 branches:
   only:
     - master
+    - feature-travisci 
 
 notifications:
   email:
