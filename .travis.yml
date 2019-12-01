@@ -3,6 +3,9 @@ c:
   - c99
   - c11
 
+git:
+  depth: false
+
 matrix:
   include: 
     - name: "Linux with gcc"
@@ -56,9 +59,15 @@ matrix:
     - name: "Windows"
       os: windows
       compiler: msvc
+      
       env: CONAN_VISUAL_VERSIONS=15
+        - GENERATOR='Visual Studio 15 2017 Win64"
+        - C_COMPILER=cl
+        - CXX_COMPILER=cl
       osx_image: xcode11.2
-      script: nmake -f Makefile.mk
+      script: 
+        - vsvars32.bat
+        - nmake -f Makefile.mk
 
 branches:
   only:
