@@ -1,4 +1,4 @@
-# libae
+# libae [![Build Status](https://www.travis-ci.org/SinuxLee/libae.svg?branch=master)](https://www.travis-ci.org/SinuxLee/libae)
 
 Redis's async event library, you can use it in your projects.
 
