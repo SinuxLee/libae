@@ -16,7 +16,8 @@ void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask);
 void writeToClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
 {
     char *buffer = clientdata;
-    anetWrite(fd, buffer, strlen(buffer));
+    printf("recv client [%d] data: %s\n", fd, buffer);
+    write(fd, buffer, strlen(buffer));
     free(buffer);
     aeDeleteFileEvent(loop, fd, mask);
 }
@@ -26,6 +27,7 @@ void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
     int buffer_size = 1024;
     char *buffer = malloc(sizeof(char) * buffer_size);
     memset(buffer, 0x00, sizeof(char) * buffer_size);
+
     int size =  read(fd, buffer, buffer_size);
     if (size <= 0)
     {
