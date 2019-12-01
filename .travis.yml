@@ -38,6 +38,11 @@ matrix:
           packages:
             - clang-10
             - make
+            - libclang-cpp10
+            - libllvm10
+            - libllvm10
+            - libclang-common-10-dev
+            - libclang1-10
           update: true
       script: make
 
@@ -50,7 +55,7 @@ matrix:
 
     - name: "Windows"
       os: windows
-      compiler: clang
+      compiler: msvc
       env: CONAN_VISUAL_VERSIONS=15
       osx_image: xcode11.2
       script: nmake -f Makefile.mk
