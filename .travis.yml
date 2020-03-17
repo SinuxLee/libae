@@ -33,6 +33,7 @@ matrix:
 
     - name: "Windows"
       os: windows
+      compiler: msvc
       env: CONAN_VISUAL_VERSIONS=15
         - GENERATOR='Visual Studio 15 2017 Win64"
         - C_COMPILER=cl
