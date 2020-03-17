@@ -24,31 +24,6 @@ matrix:
           update: true
       script: make
 
-    - name: "Linux with clang"
-      os: linux
-      dist: xenial
-      sudo: required
-      compiler:
-        - clang
-        - gcc
-      env: OS=linux COMPILER=clang CLANG_VERSION=10
-      addons:
-        apt:
-          sources:
-            - sourceline: 'ppa:ubuntu-toolchain-r/test'
-            - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main'
-              key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-          packages:
-            - clang-10
-            - make
-            - libclang-cpp10
-            - libllvm10
-            - libllvm10
-            - libclang-common-10-dev
-            - libclang1-10
-          update: true
-      script: make
-
     - name: "MacOS"
       os: osx
       compiler: clang
@@ -58,16 +33,14 @@ matrix:
 
     - name: "Windows"
       os: windows
-      compiler: msvc
-      
       env: CONAN_VISUAL_VERSIONS=15
         - GENERATOR='Visual Studio 15 2017 Win64"
         - C_COMPILER=cl
         - CXX_COMPILER=cl
-      osx_image: xcode11.2
+        - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
       script: 
-        - vsvars32.bat
-        - nmake -f Makefile.mk
+        - export PATH=$MSBUILD_PATH:$PATH
+        - vsmsbuildcmd && nmake -f Makefile.mk
 
 branches:
   only:
