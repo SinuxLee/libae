@@ -38,9 +38,14 @@ matrix:
         - C_COMPILER=cl
         - CXX_COMPILER=cl
         - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
+        - VS150COMNTOOLS="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools"
       script: 
-        - export PATH=$MSBUILD_PATH:$PATH
-        - vsmsbuildcmd && nmake -f Makefile.mk
+        - export PATH=$MSBUILD_PATH:$VS150COMNTOOLS:$PATH
+        - vsmsbuildcmd.bat
+        - vsdevcmd.bat
+        - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\VsDevCmd.bat" -host_arch=amd64 -arch=amd64
+        - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\VsDevCmd.bat" -test
+        - nmake -f Makefile.mk
 
 branches:
   only:
