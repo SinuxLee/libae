@@ -11,10 +11,13 @@ libae.a: $(OBJ)
 timer: example/timer.o libae.a
 	$(CC) $^ -o $@
 
-echo: example/echo.o libae.a
+echoclient: example/echoclient.o libae.a
+	$(CC) $^ -o $@
+
+echoserver: example/echoserver.o libae.a
 	$(CC) $^ -o $@
 
 clean:
-	rm -f $(OBJ) libae.a example/timer.o timer example/echo.o echo
+	rm -f $(OBJ) libae.a example/timer.o timer example/echoclient.o echoclient example/echoserver.o echoserver
 
 .PHONY: clean

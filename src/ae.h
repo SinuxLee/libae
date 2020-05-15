@@ -34,6 +34,9 @@
 #define __AE_H__
 
 #include <time.h>
+#ifdef _MSC_VER
+#include "sockcompat.h"
+#endif
 
 #define AE_OK 0
 #define AE_ERR -1

@@ -28,8 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#ifndef _MSC_VER
 #include <sys/select.h>
+#else
+#include <winsock.h>
+#endif
 #include <string.h>
 
 typedef struct aeApiState {

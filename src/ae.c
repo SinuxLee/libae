@@ -31,11 +31,16 @@
  */
 
 #include <stdio.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <poll.h>
+#else
+#include <sys/timeb.h>
+#include "sockcompat.h"
+#endif
+#include <sys/types.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
@@ -184,11 +189,20 @@ int aeGetFileEvents(aeEventLoop *eventLoop, int fd) {
 
 static void aeGetTime(long *seconds, long *milliseconds)
 {
+#ifdef _MSC_VER
+    struct _timeb tb;
+
+    memset(&tb, 0, sizeof(struct _timeb));
+    _ftime_s(&tb);
+    (*seconds) = tb.time;
+    (*milliseconds) = tb.millitm;
+#else
     struct timeval tv;
 
     gettimeofday(&tv, NULL);
     *seconds = tv.tv_sec;
     *milliseconds = tv.tv_usec/1000;
+#endif
 }
 
 static void aeAddMillisecondsToNow(long long milliseconds, long *sec, long *ms) {

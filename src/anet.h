@@ -32,6 +32,9 @@
 #define ANET_H
 
 #include <sys/types.h>
+#ifdef _MSC_VER
+#include "sockcompat.h"
+#endif
 
 #define ANET_OK 0
 #define ANET_ERR -1
