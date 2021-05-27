@@ -2,6 +2,8 @@ SRC = src/ae.c src/anet.c
 OBJ = ${SRC:.c=.o}
 CFLAGS = -Wno-parentheses -Wno-switch-enum -Wno-unused-value
 
+all: libae.a timer echo
+
 libae.a: $(OBJ)
 	$(AR) -rc $@ $(OBJ)
 
@@ -15,6 +17,6 @@ echo: example/echo.o libae.a
 	$(CC) $^ -o $@
 
 clean:
-	rm -f $(OBJ) libae.a example/timer.o timer example/echo.o echo
+	rm -f $(OBJ) libae.a example/*.o timer echo
 
-.PHONY: clean
+.PHONY: all timer echo clean 

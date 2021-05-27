@@ -5,6 +5,7 @@
 #include "../src/ae.h"
 
 #define BUFF_SIZE 512
+#define TIMER_SIZE 10
 
 void freeClientData(struct aeEventLoop *eventLoop, void *clientData)
 {
@@ -15,14 +16,19 @@ void freeClientData(struct aeEventLoop *eventLoop, void *clientData)
 int print(struct aeEventLoop *loop, long long id, void *clientData)
 {
     printf("event %lld - %s\n", id, (const char *)clientData);
-    return -1;
+    if (id == TIMER_SIZE)
+    {
+        aeStop(loop);
+    }
+    
+    return AE_NOMORE;
 }
 
 int main(void)
 {
-    aeEventLoop *loop = aeCreateEventLoop(10);
+    aeEventLoop *loop = aeCreateEventLoop(TIMER_SIZE);
     int i;
-    for (i = 1; i < 10; i ++) {
+    for (i = 0; i <= TIMER_SIZE; i ++) {
         char *eventData = calloc(BUFF_SIZE, sizeof(char));
         if (NULL != eventData)
         {

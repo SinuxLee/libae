@@ -182,8 +182,7 @@ int aeGetFileEvents(aeEventLoop *eventLoop, int fd) {
     return fe->mask;
 }
 
-static void aeGetTime(long *seconds, long *milliseconds)
-{
+static void aeGetTime(long *seconds, long *milliseconds){
     struct timeval tv;
 
     gettimeofday(&tv, NULL);

@@ -10,8 +10,7 @@
 void writeToClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
 {
     char *buffer = clientdata;
-    printf("recv client [%d] data: %s\n", fd, buffer);
-    write(fd, buffer, strlen(buffer));
+    anetWrite(fd, buffer, strlen(buffer));
     free(buffer);
     aeDeleteFileEvent(loop, fd, mask);
 }
@@ -24,11 +23,14 @@ void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
     size = read(fd, buffer, buffer_size);
     if (size <= 0)
     {
-      printf("Client disconnected\n");
+      printf("Client [%d] disconnected\n",fd);
       free(buffer);
       aeDeleteFileEvent(loop, fd, AE_READABLE);
       return; 
     }
+
+    printf("Recv client [%d] data: %s\n", fd, buffer);
+
     aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToClient, buffer);
 }
 
@@ -37,7 +39,7 @@ void acceptTcpHandler(aeEventLoop *loop, int fd, void *clientdata, int mask)
     int client_port, client_fd;
     char client_ip[128];
     // create client socket
-    client_fd = anetTcpAccept(NULL, fd, client_ip, 128, &client_port);
+    client_fd = anetTcpAccept(NULL, fd, client_ip, sizeof(client_ip), &client_port);
     printf("Accepted %s:%d\n", client_ip, client_port);
 
     // set client socket non-block
