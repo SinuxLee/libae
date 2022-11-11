@@ -29,19 +29,23 @@
  */
 
 #include "fmacros.h"
-
 #include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/un.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <netdb.h>
+#else
+#include <time.h>
+#define ANET_NOTUSED(V) V
+#endif
 #include <fcntl.h>
 #include <string.h>
-#include <netdb.h>
 #include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -59,12 +63,12 @@ static void anetSetError(char *err, const char *fmt, ...)
 }
 
 int anetSetBlock(char *err, int fd, int non_block) {
-    int flags;
-
     /* Set the socket blocking (if non_block is zero) or non-blocking.
      * Note that fcntl(2) for F_GETFL and F_SETFL can't be
      * interrupted by a signal. */
-    if ((flags = fcntl(fd, F_GETFL)) == -1) {
+    #ifndef _MSC_VER
+    int flags;
+	if ((flags = fcntl(fd, F_GETFL)) == -1) {
         anetSetError(err, "fcntl(F_GETFL): %s", strerror(errno));
         return ANET_ERR;
     }
@@ -78,6 +82,14 @@ int anetSetBlock(char *err, int fd, int non_block) {
         anetSetError(err, "fcntl(F_SETFL,O_NONBLOCK): %s", strerror(errno));
         return ANET_ERR;
     }
+    #else
+    u_long mode = non_block ? 0 : 1;
+    if (ioctl(fd, FIONBIO, &mode) == -1) {
+        anetSetError(err, "fcntl(F_SETFL,O_NONBLOCK): %s", strerror(errno));
+        return ANET_ERR;
+    }
+    #endif
+
     return ANET_OK;
 }
 
@@ -371,6 +383,13 @@ int anetTcpNonBlockBestEffortBindConnect(char *err, char *addr, int port,
 
 int anetUnixGenericConnect(char *err, char *path, int flags)
 {
+#ifdef _MSC_VER
+    ANET_NOTUSED(err);
+    ANET_NOTUSED(path);
+    ANET_NOTUSED(flags);
+
+    return ANET_ERR;
+#else
     int s;
     struct sockaddr_un sa;
 
@@ -395,6 +414,7 @@ int anetUnixGenericConnect(char *err, char *path, int flags)
         return ANET_ERR;
     }
     return s;
+#endif
 }
 
 int anetUnixConnect(char *err, char *path)
@@ -512,6 +532,12 @@ int anetTcp6Server(char *err, int port, char *bindaddr, int backlog)
 
 int anetUnixServer(char *err, char *path, mode_t perm, int backlog)
 {
+#ifdef _MSC_VER
+    ANET_NOTUSED(err);
+    ANET_NOTUSED(path);
+    ANET_NOTUSED(perm);
+    return ANET_ERR;
+#else
     int s;
     struct sockaddr_un sa;
 
@@ -526,6 +552,7 @@ int anetUnixServer(char *err, char *path, mode_t perm, int backlog)
     if (perm)
         chmod(sa.sun_path, perm);
     return s;
+#endif
 }
 
 static int anetGenericAccept(char *err, int s, struct sockaddr *sa, socklen_t *len) {
@@ -565,6 +592,11 @@ int anetTcpAccept(char *err, int s, char *ip, size_t ip_len, int *port) {
 }
 
 int anetUnixAccept(char *err, int s) {
+#ifdef _MSC_VER
+    ANET_NOTUSED(err);
+    ANET_NOTUSED(s);
+    return ANET_ERR;
+#else
     int fd;
     struct sockaddr_un sa;
     socklen_t salen = sizeof(sa);
@@ -572,6 +604,7 @@ int anetUnixAccept(char *err, int s) {
         return ANET_ERR;
 
     return fd;
+#endif
 }
 
 int anetPeerToString(int fd, char *ip, size_t ip_len, int *port) {

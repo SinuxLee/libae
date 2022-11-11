@@ -12,8 +12,10 @@
 *.dylib
 
 # Executables
+.vscode/
 *.exe
 *.out
 *.app
 timer
-echo
+echoclient
+echoserver
