@@ -53,7 +53,8 @@ int main()
     for(int i = 0; i < 1024; i++)
     {
         // create connection
-        ipfd = anetTcpNonBlockConnect(NULL,"172.16.40.125", 8000);
+        ipfd = anetTcpNonBlockConnect(NULL,"127.0.0.1", 8000);
+        printf("connect to server err: %d\n", ipfd);
         assert(ipfd != ANET_ERR);
 
         anetNonBlock(NULL, ipfd);

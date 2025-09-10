@@ -299,9 +299,11 @@ static int anetTcpGenericConnect(char *err, char *addr, int port,
          * the next entry in servinfo. */
         if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
             continue;
+
         if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
         if (flags & ANET_CONNECT_NONBLOCK && anetNonBlock(err,s) != ANET_OK)
             goto error;
+
         if (source_addr) {
             int bound = 0;
             /* Using getaddrinfo saves us from self-determining IPv4 vs IPv6 */
@@ -322,12 +324,19 @@ static int anetTcpGenericConnect(char *err, char *addr, int port,
                 goto error;
             }
         }
+
         if (connect(s,p->ai_addr,p->ai_addrlen) == -1) {
             /* If the socket is non-blocking, it is ok for connect() to
              * return an EINPROGRESS error here. */
+#ifdef _WIN32
+            if (WSAGetLastError() == WSAEWOULDBLOCK && flags & ANET_CONNECT_NONBLOCK)
+                goto end;
+            closesocket(s);
+#else
             if (errno == EINPROGRESS && flags & ANET_CONNECT_NONBLOCK)
                 goto end;
             close(s);
+#endif
             s = ANET_ERR;
             continue;
         }
@@ -337,11 +346,19 @@ static int anetTcpGenericConnect(char *err, char *addr, int port,
         goto end;
     }
     if (p == NULL)
+#ifdef _WIN32
+        anetSetError(err, "creating socket: %d", WSAGetLastError());
+#else
         anetSetError(err, "creating socket: %s", strerror(errno));
+#endif
 
 error:
     if (s != ANET_ERR) {
+#ifdef _WIN32
+        closesocket(s);
+#else
         close(s);
+#endif
         s = ANET_ERR;
     }
 

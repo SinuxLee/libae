@@ -1,5 +1,8 @@
 # Object files
 *.o
+*.obj
+*.pdb
+*.ilk
 
 # Libraries
 *.lib
