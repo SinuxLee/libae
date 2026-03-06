@@ -2,6 +2,10 @@
 #include "sockcompat.h"
 
 #ifdef _MSC_VER
+#include "ae_pending.h"
+#endif
+
+#ifdef _MSC_VER
 static int _wsaErrorToErrno(int err) {
     switch (err) {
         case WSAEWOULDBLOCK:
@@ -199,9 +203,20 @@ int win32_close(SOCKET fd) {
 }
 
 ssize_t win32_recv(SOCKET sockfd, void *buf, size_t len, int flags) {
-    int ret = recv(sockfd, (char*)buf, (int)len, flags);
-    _updateErrno(ret != SOCKET_ERROR);
-    return ret != SOCKET_ERROR ? ret : -1;
+#ifdef _MSC_VER
+    {
+        struct aeEventLoop *loop = aeGetCurrentEventLoop();
+        if (loop && len > 0) {
+            int n = aeTakePendingRead(loop, (int)sockfd, buf, len);
+            if (n >= 0) return (ssize_t)n;
+        }
+    }
+#endif
+    {
+        int ret = recv(sockfd, (char*)buf, (int)len, flags);
+        _updateErrno(ret != SOCKET_ERROR);
+        return ret != SOCKET_ERROR ? ret : -1;
+    }
 }
 
 ssize_t win32_send(SOCKET sockfd, const void *buf, size_t len, int flags) {
@@ -216,37 +231,32 @@ int win32_poll(struct pollfd *fds, nfds_t nfds, int timeout) {
     return ret != SOCKET_ERROR ? ret : -1;
 }
 
-// int win32_fcntl(SOCKET sockfd, int cmd, int flags){
-//     if (sockfd != INVALID_SOCKET) {
-//         switch (cmd) {
-//             case F_GETFL:
-//             {
-//                 // Since in WinSock there is no way to determine if a socket
-//                 // is blocking, we keep track of this separately.
-//                 return socket_info->flags;
-//             }
-//             case F_SETFL:
-//             {
-//                 u_long fionbio_flags = (flags & O_NONBLOCK);
-//                 if (SOCKET_ERROR == f_ioctlsocket(socket_info->socket,
-//                     FIONBIO,
-//                     &fionbio_flags)) {
-//                     errno = f_WSAGetLastError();
-//                     return -1;
-//                 } else {
-//                     socket_info->flags = flags;
-//                     return 0;
-//                 }
-//                 break;
-//             }
-//             default:
-//             {
-//                 ASSERT(cmd == F_GETFL || cmd == F_SETFL);
-//                 return -1;
-//             }
-//         }
-//     }
-//     return -1;
-// }
+int win32_fcntl(SOCKET sockfd, int cmd, int flags) {
+    if (sockfd == INVALID_SOCKET) {
+        errno = EBADF;
+        return -1;
+    }
+    switch (cmd) {
+        case F_GETFL: {
+            u_long mode = 0;
+            if (ioctlsocket(sockfd, FIONBIO, &mode) != 0) {
+                _updateErrno(0);
+                return -1;
+            }
+            return (mode == 0) ? 0 : (int)O_NONBLOCK;
+        }
+        case F_SETFL: {
+            u_long mode = (flags & O_NONBLOCK) ? 1 : 0;
+            if (ioctlsocket(sockfd, FIONBIO, &mode) != 0) {
+                _updateErrno(0);
+                return -1;
+            }
+            return 0;
+        }
+        default:
+            errno = EINVAL;
+            return -1;
+    }
+}
 
 #endif

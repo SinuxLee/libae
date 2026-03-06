@@ -10,6 +10,23 @@
 #include <ws2tcpip.h>
 #include <stddef.h>
 
+/* fcntl constants needed on all Windows compilers */
+#ifndef F_GETFL
+#define	F_GETFL		3
+#endif
+#ifndef F_SETFL
+#define	F_SETFL		4
+#endif
+#ifndef O_NONBLOCK
+#define	O_NONBLOCK	0x0004
+#endif
+
+#ifdef __GNUC__
+/* MinGW: has ssize_t, pid_t, socklen_t, mode_t, poll defs via system headers */
+#include <sys/types.h>
+typedef unsigned long       nfds_t;
+#else
+/* MSVC-only: types and poll constants not provided by the compiler */
 #define POLLRDNORM  0x0100
 #define POLLRDBAND  0x0200
 #define POLLIN      (POLLRDNORM | POLLRDBAND)
@@ -31,17 +48,12 @@ typedef int                 pid_t;
 #define mode_t            unsigned __int32
 #endif
 
-// fcntl flags used in Redis
-#define	F_GETFL		3
-#define	F_SETFL		4
-#define	O_NONBLOCK	0x0004
-
 typedef struct {
     SOCKET  fd;
     short   events;
     short   revents;
-
 }pollfd;
+#endif /* __GNUC__ vs MSVC */
 
 
 int win32_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
