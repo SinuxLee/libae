@@ -206,7 +206,7 @@ static void aeGetTime(long *seconds, long *milliseconds)
 
     memset(&tb, 0, sizeof(struct _timeb));
     _ftime_s(&tb);
-    (*seconds) = tb.time;
+    (*seconds) = (long)tb.time;
     (*milliseconds) = tb.millitm;
 #else
     struct timeval tv;
@@ -221,8 +221,8 @@ static void aeAddMillisecondsToNow(long long milliseconds, long *sec, long *ms) 
     long cur_sec, cur_ms, when_sec, when_ms;
 
     aeGetTime(&cur_sec, &cur_ms);
-    when_sec = cur_sec + milliseconds/1000;
-    when_ms = cur_ms + milliseconds%1000;
+    when_sec = cur_sec + (long)(milliseconds/1000);
+    when_ms = cur_ms + (long)(milliseconds%1000);
     if (when_ms >= 1000) {
         when_sec ++;
         when_ms -= 1000;
@@ -413,8 +413,8 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
                 shortest->when_ms - now_ms;
 
             if (ms > 0) {
-                tvp->tv_sec = ms/1000;
-                tvp->tv_usec = (ms % 1000)*1000;
+                tvp->tv_sec = (long)(ms/1000);
+                tvp->tv_usec = (long)((ms % 1000)*1000);
             } else {
                 tvp->tv_sec = 0;
                 tvp->tv_usec = 0;
@@ -514,7 +514,7 @@ int aeWait(int fd, int mask, long long milliseconds) {
     if (mask & AE_READABLE) pfd.events |= POLLIN;
     if (mask & AE_WRITABLE) pfd.events |= POLLOUT;
 
-    if ((retval = poll(&pfd, 1, milliseconds))== 1) {
+    if ((retval = poll(&pfd, 1, (int)milliseconds))== 1) {
         if (pfd.revents & POLLIN) retmask |= AE_READABLE;
         if (pfd.revents & POLLOUT) retmask |= AE_WRITABLE;
         if (pfd.revents & POLLERR) retmask |= AE_WRITABLE;

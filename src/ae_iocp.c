@@ -130,7 +130,7 @@ static DWORD WINAPI accept_notifier_thread(LPVOID param) {
 
         int fd = fd_for_handle[idx + 1];
         EnterCriticalSection(&L->lock);
-        WSAEVENT ev = (idx < L->count && L->fds[idx] == fd) ? L->events[idx] : 0;
+        WSAEVENT ev = (idx < (DWORD)L->count && L->fds[idx] == fd) ? L->events[idx] : 0;
         LeaveCriticalSection(&L->lock);
         if (ev) WSAResetEvent(ev);
 
@@ -358,7 +358,7 @@ static void aeApiDelEvent(aeEventLoop *eventLoop, int fd, int delmask) {
             buf->write_gen++;  /* Invalidate any pending synthetic WRITABLE completion */
 
         if (remaining == AE_NONE) {
-            /* Cannot free buffer now — IOCP queue may still hold completions
+            /* Cannot free buffer now -- IOCP queue may still hold completions
              * referencing it (read overlapped, or stale write completions).
              * Cancel pending read IO, invalidate write gen, and mark as
              * closing.  The buffer will be freed when poll drains the stale
@@ -437,7 +437,7 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
         aeIocpBuffer *buf = state->buffers[fd];
         if (!buf) continue;
 
-        /* Buffer marked for deferred cleanup — free it now that the
+        /* Buffer marked for deferred cleanup -- free it now that the
          * completion has been drained from the IOCP queue. */
         if (buf->closing) {
             zfree(buf);
@@ -454,7 +454,7 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
             if (bytes == buf->write_gen)
                 mask = AE_WRITABLE;
             else
-                continue;  /* stale completion — skip */
+                continue;  /* stale completion -- skip */
         }
         if (mask) {
             eventLoop->fired[numevents].fd = fd;
