@@ -16,8 +16,8 @@ void writeToServer(aeEventLoop *loop, int fd, void *clientdata, int mask)
     char *buffer = calloc(1024,1);
     memset(buffer,'a', 1023);
     int size = anetWrite(fd, buffer, strlen(buffer));
-    //printf("write to server %d byte, %s\n", size, buffer);
-    aeDeleteFileEvent(loop, fd, mask);
+    //printf("write to server %d byte\n", size);
+    aeDeleteFileEvent(loop, fd, AE_WRITABLE);
     free(buffer);
 }
 
@@ -30,14 +30,14 @@ void readFromServer(aeEventLoop *loop, int fd, void *clientdata, int mask)
     size = read(fd, buffer, buffer_size);
     if(size <= 0)
     {
-        printf("Remote disconnected.\n");
         aeDeleteFileEvent(loop, fd, AE_READABLE);
+        aeDeleteFileEvent(loop, fd, AE_WRITABLE);
+        close(fd);
     }
     else
     {
-        //printf("read from server, %s\n", buffer);
+        //printf("read from server %d bytes\n", size);
         aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToServer, NULL);
-        aeCreateFileEvent(loop, fd, AE_READABLE, readFromServer, NULL);
     }
     
     free(buffer);
@@ -48,14 +48,18 @@ int main()
     int ipfd;
 	// create main event loop
     aeEventLoop *loop;
-    loop = aeCreateEventLoop(40960);
+    loop = aeCreateEventLoop(65536);
 	
-    for(int i = 0; i < 1024; i++)
+    int connected = 0;
+    for(int i = 0; i < 100; i++)
     {
-        // create connection
-        ipfd = anetTcpNonBlockConnect(NULL,"127.0.0.1", 8000);
-        printf("connect to server err: %d\n", ipfd);
-        assert(ipfd != ANET_ERR);
+        // create connection (blocking connect, then set non-block for I/O)
+        ipfd = anetTcpConnect(NULL,"127.0.0.1", 8000);
+        if (ipfd == ANET_ERR) {
+            printf("connect to server failed, skipping\n");
+            continue;
+        }
+        printf("connect to server fd: %d\n", ipfd);
 
         anetNonBlock(NULL, ipfd);
         anetEnableTcpNoDelay(NULL, ipfd);
@@ -68,7 +72,15 @@ int main()
         // regist socket write callback
         ret = aeCreateFileEvent(loop, ipfd, AE_WRITABLE, writeToServer, NULL);
         assert(ret != AE_ERR);
+        connected++;
     }
+
+    if (connected == 0) {
+        printf("No connections established, exiting.\n");
+        aeDeleteEventLoop(loop);
+        return 1;
+    }
+    printf("%d connections established.\n", connected);
 
     // start main loop
     aeMain(loop);
