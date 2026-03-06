@@ -132,4 +132,8 @@ void aeSetAfterSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *aftersleep);
 int aeGetSetSize(aeEventLoop *eventLoop);
 int aeResizeSetSize(aeEventLoop *eventLoop, int setsize);
 
+/* IOCP: allow recv/read to get data already received by the backend (returns -1 if none) */
+aeEventLoop *aeGetCurrentEventLoop(void);
+int aeTakePendingRead(aeEventLoop *eventLoop, int fd, void *buf, size_t len);
+
 #endif

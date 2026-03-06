@@ -49,6 +49,14 @@
 #include "zmalloc.h"
 #include "config.h"
 
+#ifdef _MSC_VER
+#ifdef __GNUC__
+static __thread aeEventLoop *ae_current_event_loop = NULL;
+#else
+static __declspec(thread) aeEventLoop *ae_current_event_loop = NULL;
+#endif
+#endif
+
 /* Include the best multiplexing layer supported by this system.
  * The following should be ordered by performances, descending. */
 #ifdef _MSC_VER
@@ -432,6 +440,9 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         if (eventLoop->aftersleep != NULL && flags & AE_CALL_AFTER_SLEEP)
             eventLoop->aftersleep(eventLoop);
 
+#ifdef _MSC_VER
+        ae_current_event_loop = eventLoop;
+#endif
         for (j = 0; j < numevents; j++) {
             aeFileEvent *fe = &eventLoop->events[eventLoop->fired[j].fd];
             int mask = eventLoop->fired[j].mask;
@@ -481,6 +492,9 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 
             processed++;
         }
+#ifdef _MSC_VER
+        ae_current_event_loop = NULL;
+#endif
     }
     /* Check time events */
     if (flags & AE_TIME_EVENTS)
@@ -522,6 +536,26 @@ void aeMain(aeEventLoop *eventLoop) {
 
 char *aeGetApiName(void) {
     return aeApiName();
+}
+
+aeEventLoop *aeGetCurrentEventLoop(void) {
+#ifdef _MSC_VER
+    return ae_current_event_loop;
+#else
+    return NULL;
+#endif
+}
+
+int aeTakePendingRead(aeEventLoop *eventLoop, int fd, void *buf, size_t len) {
+#ifdef _MSC_VER
+    return aeApiTakePendingRead(eventLoop, fd, buf, len);
+#else
+    (void)eventLoop;
+    (void)fd;
+    (void)buf;
+    (void)len;
+    return -1;
+#endif
 }
 
 void aeSetBeforeSleepProc(aeEventLoop *eventLoop, aeBeforeSleepProc *beforesleep) {
