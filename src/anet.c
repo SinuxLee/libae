@@ -83,7 +83,7 @@ int anetSetBlock(char *err, int fd, int non_block) {
         return ANET_ERR;
     }
     #else
-    u_long mode = non_block ? 0 : 1;
+    u_long mode = non_block ? 1 : 0;
     if (ioctl(fd, FIONBIO, &mode) == -1) {
         anetSetError(err, "fcntl(F_SETFL,O_NONBLOCK): %s", strerror(errno));
         return ANET_ERR;
