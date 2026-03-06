@@ -1,0 +1,43 @@
+# Windows build (MinGW gcc). Use IOCP by defining _MSC_VER for ae.c.
+CC = gcc
+AR = ar
+CFLAGS = -O2 -D_WIN32 -D_MSC_VER -I. -Isrc -Wno-parentheses -Wno-switch-enum -Wno-unused-value -fcommon
+LDFLAGS = -lws2_32 -lmswsock -Wl,--allow-multiple-definition
+
+SRC = src/ae.c src/anet.c src/sockcompat.c
+OBJ = ae.o anet.o sockcompat.o
+
+libae.a: ae.o anet.o sockcompat.o
+	$(AR) -rc $@ ae.o anet.o sockcompat.o
+
+ae.o: src/ae.c
+	$(CC) -c $(CFLAGS) $< -o $@
+anet.o: src/anet.c
+	$(CC) -c $(CFLAGS) $< -o $@
+sockcompat.o: src/sockcompat.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+echoserver: example/echoserver.o libae.a
+	$(CC) example/echoserver.o -L. -lae $(LDFLAGS) -o echoserver.exe
+
+echoclient: example/echoclient.o libae.a
+	$(CC) example/echoclient.o -L. -lae $(LDFLAGS) -o echoclient.exe
+
+timer: example/timer.o libae.a
+	$(CC) example/timer.o -L. -lae $(LDFLAGS) -o timer.exe
+
+example/echoserver.o: example/echoserver.c
+	$(CC) -c $(CFLAGS) -I. -Isrc $< -o $@
+
+example/echoclient.o: example/echoclient.c
+	$(CC) -c $(CFLAGS) -I. -Isrc $< -o $@
+
+example/timer.o: example/timer.c
+	$(CC) -c $(CFLAGS) -I. -Isrc $< -o $@
+
+clean:
+	-del /Q ae.o anet.o sockcompat.o libae.a 2>nul
+	-del /Q example\echoserver.o example\echoclient.o example\timer.o 2>nul
+	-del /Q echoserver.exe echoclient.exe timer.exe 2>nul
+
+.PHONY: clean
