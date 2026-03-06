@@ -19,7 +19,7 @@ void writeToClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
     //printf("recv client [%d] data: %s\n", fd, buffer);
     write(fd, buffer, strlen(buffer));
     free(buffer);
-    aeDeleteFileEvent(loop, fd, mask);
+    aeDeleteFileEvent(loop, fd, AE_WRITABLE);
 }
 
 void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
@@ -31,14 +31,13 @@ void readFromClient(aeEventLoop *loop, int fd, void *clientdata, int mask)
     int size =  read(fd, buffer, buffer_size);
     if (size <= 0)
     {
-      printf("Client disconnected\n");
       free(buffer);
       aeDeleteFileEvent(loop, fd, AE_READABLE);
+      aeDeleteFileEvent(loop, fd, AE_WRITABLE);
+      close(fd);
       return; 
     }
 
-    //printf("Read from client, %s\n", buffer);
-    aeCreateFileEvent(loop, fd, AE_READABLE, readFromClient, NULL);
     aeCreateFileEvent(loop, fd, AE_WRITABLE, writeToClient, buffer);
     datalength += size;
 }
@@ -50,6 +49,7 @@ void acceptTcpHandler(aeEventLoop *loop, int fd, void *clientdata, int mask)
     // create client socket
     client_fd = anetTcpAccept(NULL, fd, client_ip, 128, &client_port);
     printf("Accepted %s:%d\n", client_ip, client_port);
+    fflush(stdout);
 
     // set client socket non-block
     anetNonBlock(NULL, client_fd);
@@ -65,6 +65,7 @@ int CalcByteTimer(struct aeEventLoop *loop, long long id, void *clientData)
     static long long curlength = 0;
     int rate = (datalength - curlength) / (1024 *1024);
     printf("Recive rate: %d MB/s, %lld \n", rate, datalength - curlength);
+    fflush(stdout);
     curlength = datalength;
 
     aeCreateTimeEvent(loop, 1000, CalcByteTimer,NULL, NULL);
